@@ -191,6 +191,10 @@ const STAGE = "full"; // "loi" | "full"
 
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const human = s => { s = String(s || "").replace(/_/g, " "); return s.charAt(0).toUpperCase() + s.slice(1); };
+// full-application statuses in plain words (platform value -> what it means for the AITC)
+const FULL_LABEL = {submitted: "Awaiting admin check", ready_for_review: "Checked, awaiting reviewer assignment",
+                    reviewers_assigned: "Under review"};
+const fullLabel = st => FULL_LABEL[st] || human(st);
 const date = s => s ? new Date(s).toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"}) : "";
 const val = v => (v === null || v === undefined || v === "") ? '<span class="dash">—</span>' : esc(v);
 const COST = /cost/i;
@@ -221,7 +225,7 @@ function coiSelfReport(s){
   return v && !/^(none|n.a|no)([^a-z]|$)/i.test(v) ? v : "";
 }
 function status(s){
-  if (STAGE === "full") return {label:human(s.full.status), cls:"full"};
+  if (STAGE === "full") return {label:fullLabel(s.full.status), cls:"full"};
   const st = (s.loi||{}).status;
   if (st === "invited") return {label:"Invited to full application", cls:"full"};
   if (st === "not_invited" || st === "declined") return {label:"Not invited", cls:"declined"};
@@ -255,7 +259,7 @@ function panes(s){
   const coi = coiSelfReport(s);
   const decisions = STAGE === "loi"
     ? [["Status", val(human(loi.status))],["Submitted", val(date(loi.submitted_at))],["Eligibility", val(human((loi.eligibility||{}).status))],["Overall score", val(loi.overall_score)],["Decided", val(date(loi.decided_at))],["Decision note", val(loi.decision_note_md)]]
-    : [["Status", val(human(full.status))],["Submitted", val(date(full.submitted_at))],["Extended to", val(date(full.extended_to))],["Admin note", val(full.admin_note)],["Decision", val(human(full.decision))],["Overall score", val(full.overall_score)]];
+    : [["Status", val(fullLabel(full.status))],["Submitted", val(date(full.submitted_at))],["Extended to", val(date(full.extended_to))],["Admin note", val(full.admin_note)],["Decision", val(human(full.decision))],["Overall score", val(full.overall_score)]];
   const overview = '<div class="cols">'
     + '<div><h4>Principal investigator</h4>' + dl([["Name", val(pi.name)],["Title", val(pi.title)],["Institution", val(pi.institution)],["Department", val(pi.department)],["Email", pi.email ? '<a href="mailto:' + esc(pi.email) + '">' + esc(pi.email) + '</a>' : val("")]]) + '</div>'
     + '<div><h4>Team</h4>' + team(s) + '</div>'
@@ -303,9 +307,9 @@ const STOPS = STAGE === "loi" ? [
   ["Invited to full application", s => (s.loi||{}).status === "invited"],
   ["Not invited", s => ["not_invited","declined"].includes((s.loi||{}).status)],
 ] : [
-  ["Submitted, awaiting check", fullIs("submitted")],
-  ["Ready for review", fullIs("ready_for_review")],
-  ["Reviewers assigned", fullIs("reviewers_assigned")],
+  ["Awaiting admin check", fullIs("submitted")],
+  ["Awaiting reviewer assignment", fullIs("ready_for_review")],
+  ["Under review", fullIs("reviewers_assigned")],
   ["All reviews in", reviewsDone],
 ];
 let stop = -1, coiOnly = false;

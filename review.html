@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>aitcreview · Reviewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --yale:#00356b; --yale-ink:#0b2547; --link:#286dc0; --wash:#eef3fa;
+  --ink:#19243a; --body:#3a4458; --muted:#6b7588; --line:#e3e8f0; --line-2:#d3dbe7;
+  --warm:#c2410c; --warm-bg:#fff4ec; --ok:#17603a; --ok-bg:#e9f6ee;
+  --sans:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#fff;color:var(--body);font:15px/1.6 var(--sans);font-feature-settings:"tnum"}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--link);outline-offset:2px;border-radius:4px}
+[hidden]{display:none!important}
+
+.top{position:relative;overflow:hidden;background:
+  radial-gradient(60% 120% at 15% 0%,#d9e6f7 0%,transparent 60%),
+  radial-gradient(50% 110% at 90% 10%,#e6edf8 0%,transparent 65%),#fff}
+.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:70px;background:linear-gradient(transparent,#fff)}
+nav{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:22px 32px;display:flex;align-items:center;gap:24px}
+.brand{display:flex;align-items:baseline;gap:2px;font:700 22px var(--sans);letter-spacing:-.02em;color:var(--yale)}
+.brand i{font-style:normal;font-weight:500;color:var(--link)}
+.brand .role{font-weight:500;color:var(--muted);margin-left:8px;font-size:16px;letter-spacing:0}
+.brand-sub{font-size:12px;color:var(--muted);border-left:1px solid var(--line-2);padding-left:12px;line-height:1.25}
+nav .right{margin-left:auto;font-size:14px;color:var(--ink)}
+.hero{position:relative;z-index:1;text-align:center;max-width:980px;margin:0 auto;padding:22px 32px 20px}
+.kicker{font:400 22px/1.3 var(--serif);color:var(--ink);margin:0}
+h1{font:600 46px/1.1 var(--serif);color:var(--ink);letter-spacing:-.01em;margin:8px 0 6px}
+.stats{position:relative;z-index:1;max-width:760px;margin:12px auto 0;padding:0 32px 30px;display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
+.stats div{display:flex;flex-direction:column;align-items:center;gap:2px}
+.stats .n{font:600 34px/1 var(--serif);color:var(--yale)}
+.stats .l{font-size:13px;color:var(--body)}
+.stats .u{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.stats .warm .n{color:var(--warm)}
+
+main{max-width:1240px;margin:0 auto;padding:8px 32px 72px}
+h2.sec{font:600 26px var(--serif);color:var(--ink);margin:0 0 4px}
+.sub{font-size:13px;color:var(--muted);margin:0 0 14px}
+
+.table{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.thead,.row{display:grid;grid-template-columns:minmax(0,1fr) 210px 120px 190px;gap:20px;align-items:start;padding:16px 22px}
+.thead{background:var(--yale-ink);color:#fff;font-size:13px;font-weight:600;padding-top:13px;padding-bottom:13px}
+.row{border-top:1px solid var(--line);cursor:pointer;transition:background .12s;color:inherit}
+.row:first-of-type{border-top:0}
+.row:hover{background:#f7f9fc;text-decoration:none}
+.row .title{font:600 18px/1.35 var(--serif);color:var(--yale)}
+.by{font-size:14px;color:var(--ink);margin-top:3px}
+.by span{color:var(--muted)}
+.kws{font-size:13px;color:var(--muted);margin-top:4px}
+.kws span+span::before{content:" · "}
+.cell{font-size:14px;color:var(--ink)}
+.stagepill{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:1px 10px;background:var(--wash);color:var(--yale)}
+.stagepill.full{background:var(--yale);color:#fff}
+.state{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:var(--ink)}
+.state::before{content:"";width:8px;height:8px;border-radius:50%;background:#b8c0cc}
+.state.draft::before{background:var(--link)}
+.state.submitted::before{background:var(--ok)}
+.state.submitted{color:var(--ok)}
+.state.conflict::before{background:var(--warm)}
+.state.conflict{color:var(--warm)}
+.empty-state{padding:44px;text-align:center;color:var(--muted)}
+
+/* detail */
+.crumb{display:flex;align-items:center;gap:12px;margin:0 0 14px;font-size:14px}
+.crumb a{font-weight:600}
+.split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;align-items:start}
+.app h2{font:600 30px/1.2 var(--serif);color:var(--yale);margin:4px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:16px}
+.card h4,.rf h4{font:600 13px var(--sans);color:var(--ink);margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+dl{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;margin:0;font-size:14px}
+dt{color:var(--muted)}
+dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
+.note{margin:0 0 16px;padding:12px 16px;border-left:3px solid var(--warm);background:var(--warm-bg);border-radius:0 8px 8px 0;font-size:14px;color:var(--ink)}
+.note b{color:var(--warm);font-weight:600;display:block;margin-bottom:2px}
+.qa{list-style:none;margin:0;padding:0}
+.qa li{padding:12px 0;border-top:1px solid var(--line);font-size:14px}
+.qa li:first-child{border-top:0;padding-top:0}
+.qa .q{color:var(--muted);font-size:13px;margin-bottom:2px}
+.qa .a{color:var(--ink);white-space:pre-wrap}
+.docs{list-style:none;margin:0;padding:0;font-size:14px}
+.docs li{display:flex;gap:10px;padding:6px 0;border-top:1px solid var(--line);color:var(--ink)}
+.docs li:first-child{border-top:0}
+.docs small{color:var(--muted)}
+.docnote{font-size:12px;color:var(--muted);margin:8px 0 0}
+
+/* review form */
+.rf{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto;border:1px solid var(--line-2);border-radius:14px;background:#fff;box-shadow:0 8px 30px -18px rgba(11,37,71,.35)}
+.rf-head{position:sticky;top:0;z-index:2;background:var(--yale-ink);color:#fff;padding:14px 22px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.rf-head b{font:600 18px var(--serif)}
+.rf-head span{font-size:12px;opacity:.8}
+.rf form{padding:6px 22px 22px}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+.qb{padding:18px 0;border-top:1px solid var(--line)}
+.qb:first-child{border-top:0}
+.qb h3{font:600 17px/1.3 var(--serif);color:var(--ink);margin:0 0 2px}
+.qb .crit{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+.qb .num{color:var(--link);font-family:var(--sans);font-weight:600;margin-right:6px}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{position:relative}
+.opt input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.opt span{display:block;padding:7px 14px;border:1px solid var(--line-2);border-radius:999px;font-size:14px;font-weight:500;color:var(--ink);background:#fff}
+.opt input:checked+span{background:var(--yale);border-color:var(--yale);color:#fff}
+.opt input:focus-visible+span{outline:2px solid var(--link);outline-offset:2px}
+.opt.warm input:checked+span{background:var(--warm);border-color:var(--warm)}
+.opt input:disabled{cursor:not-allowed}
+.opt input:disabled+span{opacity:.55}
+.opt input:disabled:checked+span{opacity:.85}
+.scale{display:grid;grid-template-columns:repeat(9,1fr);border:1px solid var(--line-2);border-radius:10px;overflow:hidden}
+.scale label{position:relative;text-align:center;border-left:1px solid var(--line-2)}
+.scale label:first-child{border-left:0}
+.scale input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.scale span{display:block;padding:9px 0;font:600 16px var(--sans);color:var(--ink);background:#fff}
+.scale label:hover span{background:var(--wash)}
+.scale input:checked+span{background:var(--yale);color:#fff}
+.scale input:focus-visible+span{outline:2px solid var(--link);outline-offset:-3px}
+.scale input:disabled{cursor:not-allowed}
+.scale input:disabled+span{opacity:.6}
+.desc{font-size:13px;color:var(--muted);margin:6px 0 0;min-height:20px}
+.desc b{color:var(--ink)}
+.ends{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.06em}
+textarea{width:100%;font:inherit;font-size:14px;color:var(--ink);border:1px solid var(--line-2);border-radius:10px;padding:9px 12px;resize:vertical;min-height:76px;background:#fff}
+textarea:disabled{background:#f6f8fb;color:var(--body)}
+label.lbl{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:12px 0 4px}
+label.lbl small{font-weight:400;color:var(--muted)}
+.cnt{display:block;text-align:right;font-size:11px;color:var(--muted);margin-top:2px}
+.cnt.hot{color:var(--warm);font-weight:600}
+.err{color:var(--warm);font-size:13px;font-weight:600;margin:6px 0 0}
+.err:empty{display:none}
+.bad textarea,.bad .scale,.bad .opt span{border-color:var(--warm)}
+.coi-box{background:var(--warm-bg);border-radius:12px;padding:14px 16px;margin:14px 0 0}
+.coi-box h3{font:600 17px var(--serif);color:var(--ink);margin:0 0 8px}
+.coi-box .opt span{background:#fff}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-top:16px;border-top:1px solid var(--line)}
+.btn{font:600 14px var(--sans);border-radius:999px;padding:10px 20px;border:1px solid var(--yale);cursor:pointer;background:#fff;color:var(--yale)}
+.btn:hover{background:var(--wash)}
+.btn.primary{background:var(--yale);color:#fff}
+.btn.primary:hover{background:var(--yale-ink)}
+.btn.warm{background:var(--warm);border-color:var(--warm);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.saved{font-size:13px;color:var(--muted);margin-left:auto}
+.summary-err{margin:12px 0 0;padding:10px 14px;border-radius:10px;background:var(--warm-bg);color:var(--warm);font-size:13px;font-weight:600}
+.summary-err ul{margin:4px 0 0;padding-left:18px;font-weight:500}
+.summary-err a{color:var(--warm);text-decoration:underline}
+.banner{margin:14px 22px 0;padding:10px 14px;border-radius:10px;font-size:14px}
+.banner.ok{background:var(--ok-bg);color:var(--ok)}
+.banner.warm{background:var(--warm-bg);color:var(--warm)}
+.banner.info{background:var(--wash);color:var(--yale)}
+
+/* screens */
+.msg{max-width:560px;margin:70px auto;text-align:center;padding:0 24px}
+.msg h2{font:600 28px var(--serif);color:var(--ink);margin:0 0 10px}
+.msg p{color:var(--body)}
+.msg.bad h2{color:var(--warm)}
+.demo{background:var(--yale-ink);color:#fff;font-size:13px;padding:8px 32px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}
+.demo select{font:inherit;font-size:13px;border-radius:999px;border:1px solid #5a7aa3;background:#10315c;color:#fff;padding:3px 10px}
+.demo button{all:unset;cursor:pointer;color:#cfe0f7;text-decoration:underline;font-size:12px}
+.demo button:focus-visible,.demo select:focus-visible{outline:2px solid #fff}
+dialog{border:0;border-radius:14px;padding:24px 26px;max-width:440px;box-shadow:0 20px 60px -10px rgba(11,37,71,.45);color:var(--body)}
+dialog::backdrop{background:rgba(11,37,71,.45)}
+dialog h3{font:600 20px var(--serif);color:var(--ink);margin:0 0 8px}
+dialog .actions{border:0;justify-content:flex-end;padding-top:14px}
+footer{max-width:1240px;margin:0 auto;padding:0 32px 40px;font-size:12px;color:var(--muted)}
+
+@media (max-width:980px){
+  h1{font-size:34px}
+  .thead{display:none}
+  .row{grid-template-columns:minmax(0,1fr);gap:6px}
+  .split{grid-template-columns:1fr}
+  .rf{position:static;max-height:none;overflow:visible}
+  .rf-head{position:static}
+  nav{padding:18px 20px}
+  .brand-sub{display:none}
+  main{padding:8px 16px 56px}
+  .hero{padding:16px 20px}
+  .stats{padding:0 16px 24px}
+  .demo{padding:8px 16px}
+  .scale span{padding:11px 0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div id="demobar" class="demo" hidden>
+  <span><b>Demo mode</b> — data stays in your browser</span>
+  <label>Reviewer: <select id="who" aria-label="Switch demo reviewer"></select></label>
+  <button id="resetDemo" type="button">Reset demo data</button>
+</div>
+<div class="top">
+  <nav>
+    <div class="brand">aitc<i>review</i><span class="role">· Reviewer</span></div>
+    <div class="brand-sub">Artificial Intelligence and<br>Technology Collaboratories</div>
+    <div class="right" id="navRight"></div>
+  </nav>
+  <header class="hero" id="hero" hidden>
+    <p class="kicker">Application review</p>
+    <h1 id="greet"></h1>
+  </header>
+  <section class="stats" id="stats" aria-label="Your review progress" hidden></section>
+</div>
+<main id="main" aria-live="polite"></main>
+<footer id="foot">Your link is personal — please don't share it. Reviews are confidential.</footer>
+<dialog id="dlg" aria-labelledby="dlgT"><h3 id="dlgT"></h3><p id="dlgB"></p>
+  <div class="actions"><button class="btn" id="dlgNo" type="button">Cancel</button><button class="btn primary" id="dlgYes" type="button">Confirm</button></div></dialog>
+<script>
+const API_URL = "PASTE_APPS_SCRIPT_WEB_APP_URL_HERE"; // Apps Script web app URL (ends in /exec)
+const MOCK = null;          // null in production; sample data in the demo
+
+const DESC = {1:"Exceptional",2:"Outstanding",3:"Excellent",4:"Very Good",5:"Good",6:"Satisfactory",7:"Fair",8:"Marginal",9:"Poor"};
+const DESC_LONG = {1:"Exceptionally strong with essentially no weaknesses",2:"Extremely strong with negligible weaknesses",3:"Very strong with only some minor weaknesses",4:"Strong but with numerous minor weaknesses",5:"Strong but with at least one moderate weakness",6:"Some strengths but at least one moderate weakness",7:"Some strengths but with at least one major weakness",8:"A few strengths and a few major weaknesses",9:"Very few strengths and numerous major weaknesses"};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money = n => "$" + Number(n).toLocaleString("en-US");
+const fmtDate = s => s ? new Date(s).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}) : "";
+const STAGE_LABEL = {loi:"LOI", full:"Full"};
+const FIELDS = ["coi_declared","coi_note","factor1_score","factor1_comment","factor2_score","factor2_comment","factor3","factor3_explanation","human_subjects","human_subjects_comment","overall_impact","summary","strengths","weaknesses"];
+
+/* ---------------- backend (real or mock) ---------------- */
+const params = new URLSearchParams(location.search);
+const hashParams = () => new URLSearchParams(location.hash.replace(/^#/, ""));
+const MAX_TEXT = 5000, MAX_TOTAL = 30000;
+const TEXT_FIELDS = ["coi_note","factor1_comment","factor2_comment","factor3_explanation","human_subjects_comment","summary","strengths","weaknesses"];
+// token: URL hash (#t=TOKEN, preferred: never sent to servers) or ?t= (compatibility)
+let TOKEN = hashParams().get("t") || params.get("t") || "";
+// strip ?t= from the address bar right away (keeps the token out of history/bookmarks of the query string)
+if (params.has("t") && TOKEN) history.replaceState(null, "", location.pathname + "#t=" + encodeURIComponent(TOKEN));
+const appHash = (id, stage) => "#t=" + encodeURIComponent(TOKEN) + "&a=" + encodeURIComponent(id) + "&s=" + stage;
+
+async function realMe(t){
+  const r = await fetch(API_URL + (API_URL.includes("?")?"&":"?") + "action=me&t=" + encodeURIComponent(t));
+  return r.json();
+}
+async function realSave(body){
+  const r = await fetch(API_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(body)});
+  return r.json();
+}
+
+/* mock: same contract, state in localStorage */
+const MKEY = "aitc-demo-reviews-v1";
+const mockStore = () => { try { return JSON.parse(localStorage.getItem(MKEY) || "{}"); } catch(e) { return {}; } };
+async function mockMe(t){
+  const rv = MOCK.reviewers.find(x => x.token === t);
+  if (!rv) return {error:"invalid_token"};
+  const asg = MOCK.assignments.filter(a => a.token === t).map(a => ({application_id:a.application_id, stage:a.stage}));
+  const apps = asg.map(a => { const x = MOCK.applications.find(p => p.application_id===a.application_id && p.stage===a.stage); return {application_id:a.application_id, stage:a.stage, data:x.json}; });
+  const st = mockStore();
+  const reviews = asg.map(a => st[t+"|"+a.application_id+"|"+a.stage] ? Object.assign({application_id:a.application_id, stage:a.stage}, st[t+"|"+a.application_id+"|"+a.stage]) : null).filter(Boolean);
+  return {reviewer:{name:rv.name}, assignments:asg, applications:apps, reviews};
+}
+async function mockSave(b){
+  const rv = MOCK.reviewers.find(x => x.token === b.t);
+  if (!rv) return {error:"invalid_token"};
+  if (!MOCK.assignments.some(a => a.token===b.t && a.application_id===b.application_id && a.stage===b.stage)) return {error:"not_assigned"};
+  const st = mockStore(), k = b.t+"|"+b.application_id+"|"+b.stage;
+  if (st[k] && (st[k].status==="submitted"||st[k].status==="conflict")) return {error:"locked", status:st[k].status};
+  const status = !b.submit ? "draft" : (b.review.coi_declared==="conflict" ? "conflict" : "submitted");
+  const now = new Date().toISOString();
+  st[k] = {status, updated_at:now, review:b.review};
+  localStorage.setItem(MKEY, JSON.stringify(st));
+  return {ok:true, status, updated_at:now};
+}
+const api = MOCK ? {me:mockMe, save:mockSave} : {me:realMe, save:realSave};
+
+/* ---------------- state ---------------- */
+let DATA = null;          // response of action=me
+let CUR = null;           // {app, stage, status, review, readonly}
+let saveTimer = null;
+
+const revOf = (id, stage) => (DATA.reviews || []).find(r => r.application_id===id && r.stage===stage);
+const statusOf = (id, stage) => { const r = revOf(id, stage); return r ? (r.status || "draft") : "none"; };
+const STATUS_TXT = {none:"Not started", draft:"Draft saved", submitted:"Submitted", conflict:"Conflict declared"};
+const lsKey = (id, stage) => "aitc-draft:" + TOKEN.slice(0,8) + ":" + id + ":" + stage;
+
+function showMessage(title, body, bad){
+  $("#hero").hidden = true; $("#stats").hidden = true; $("#navRight").textContent = "";
+  $("#main").innerHTML = '<div class="msg' + (bad ? " bad" : "") + '"><h2>' + esc(title) + '</h2><p>' + esc(body) + '</p></div>';
+}
+const INVALID = () => showMessage("This link isn't valid", "This link isn't valid. Ask the AITC coordinator for your personal review link.", true);
+
+async function load(){
+  if (!TOKEN) return INVALID();
+  $("#main").innerHTML = '<div class="msg"><p>Loading your assignments…</p></div>';
+  let d;
+  try { d = await api.me(TOKEN); }
+  catch(e){ return showMessage("Couldn't reach the server", "Check your connection and reload this page. Your saved work is not lost.", true); }
+  if (!d || d.error) return (d && d.error === "invalid_token") ? INVALID() : showMessage("Something went wrong", (d && d.message) || "Please reload, or contact the AITC coordinator.", true);
+  DATA = d; route();
+}
+
+/* ---------------- header ---------------- */
+function renderHeader(){
+  const a = DATA.assignments.length;
+  let dr = 0, sub = 0;
+  DATA.assignments.forEach(x => { const s = statusOf(x.application_id, x.stage); if (s==="draft") dr++; else if (s==="submitted"||s==="conflict") sub++; });
+  const compact = hashParams().has("a");
+  $("#hero").hidden = compact;
+  $("#greet").textContent = "Hello, " + DATA.reviewer.name;
+  $("#navRight").textContent = DATA.reviewer.name;
+  const st = $("#stats"); st.hidden = compact;
+  st.innerHTML = '<div><span class="n">'+a+'</span><span class="l">Assigned</span><span class="u">to you</span></div>'
+    + '<div><span class="n">'+dr+'</span><span class="l">Drafts</span><span class="u">in progress</span></div>'
+    + '<div><span class="n">'+sub+'</span><span class="l">Submitted</span><span class="u">done</span></div>';
+}
+
+/* ---------------- list ---------------- */
+function renderList(){
+  CUR = null; renderHeader(); document.title = "aitcreview · Reviewer";
+  const rows = DATA.assignments.map(x => {
+    const app = DATA.applications.find(p => p.application_id===x.application_id && p.stage===x.stage);
+    return app ? {x, d:app.data} : null;
+  }).filter(Boolean);
+  let h = '<h2 class="sec">Your assignments</h2><p class="sub">Open an application to read it and write your review. Drafts are saved; submitted reviews are final.</p>';
+  if (!rows.length) h += '<div class="table"><div class="empty-state">No applications are assigned to you yet.</div></div>';
+  else {
+    h += '<div class="table"><div class="thead" aria-hidden="true"><div>Application</div><div>Site</div><div>Stage</div><div>My status</div></div>';
+    rows.forEach(({x,d}) => {
+      const s = statusOf(x.application_id, x.stage);
+      const kws = (d.keywords||[]).map(k => '<span>'+esc(k)+'</span>').join("");
+      h += '<a class="row" href="'+appHash(x.application_id, x.stage)+'">'
+        + '<div><div class="title">'+esc(d.title)+'</div><div class="by">'+esc(d.pi.name)+' <span>· '+esc(d.pi.institution)+'</span></div>'+(kws?'<div class="kws">'+kws+'</div>':'')+'</div>'
+        + '<div class="cell">'+esc(d.program_name)+'</div>'
+        + '<div class="cell"><span class="stagepill '+x.stage+'">'+(x.stage==="loi"?"LOI":"Full")+'</span></div>'
+        + '<div class="cell"><span class="state '+(s==="none"?"":s)+'">'+STATUS_TXT[s]+'</span></div></a>';
+    });
+    h += '</div>';
+  }
+  $("#main").innerHTML = h;
+  window.scrollTo(0,0);
+}
+
+/* ---------------- detail ---------------- */
+const aval = (q, a) => /cost/i.test(q) && a !== "" && !isNaN(Number(a)) ? money(a) : a;
+
+function renderApp(d, stage){
+  const team = (d.collaborators||[]).map(c => esc(c.name) + (c.institution ? ' <span style="color:var(--muted)">('+esc(c.institution)+')</span>' : "")).join("<br>");
+  let h = '<div class="app"><div class="chips"><span class="stagepill '+stage+'">'+(stage==="loi"?"Letter of intent":"Full application")+'</span><span class="cell">'+esc(d.program_name)+'</span></div>'
+    + '<h2>'+esc(d.title)+'</h2>';
+  if (d.coi_self_report) h += '<div class="note"><b>Applicant\'s conflict-of-interest self-report</b>'+esc(d.coi_self_report)+'</div>';
+  h += '<div class="card"><h4>Team</h4><dl><dt>PI</dt><dd>'+esc(d.pi.name)+(d.pi.title?', '+esc(d.pi.title):'')+'<br><span style="color:var(--muted)">'+esc([d.pi.department,d.pi.institution].filter(Boolean).join(", "))+'</span></dd>'
+    + (team?'<dt>Collaborators</dt><dd>'+team+'</dd>':'')
+    + ((d.keywords||[]).length?'<dt>Keywords</dt><dd>'+d.keywords.map(esc).join(" · ")+'</dd>':'')+'</dl></div>';
+  h += '<div class="card"><h4>'+(stage==="loi"?"Letter of intent":"Application")+' — answers</h4><ul class="qa">'
+    + (d.answers||[]).map(a => '<li><div class="q">'+esc(a.q)+'</div><div class="a">'+(a.a===""?'<span style="color:#aab2c0">—</span>':esc(aval(a.q,a.a)))+'</div></li>').join("") + '</ul></div>';
+  h += '<div class="card"><h4>Documents</h4>'+((d.documents||[]).length ? '<ul class="docs">'+d.documents.map(x => '<li><span aria-hidden="true">📄</span><span>'+esc(x.label)+'<br><small>'+esc(x.filename)+'</small></span></li>').join("")+'</ul><p class="docnote">Document files are shared separately by the coordinator.</p>' : '<p class="docnote">No documents listed.</p>')+'</div></div>';
+  return h;
+}
+
+const scale = (name, label) => '<div class="scale" role="radiogroup" aria-label="'+label+'">'
+  + [1,2,3,4,5,6,7,8,9].map(n => '<label title="'+n+' — '+DESC[n]+'"><input type="radio" name="'+name+'" value="'+n+'"><span>'+n+'</span></label>').join("")
+  + '</div><div class="ends"><span>1 = best</span><span>9 = worst</span></div><p class="desc" data-desc="'+name+'"></p>';
+const radios = (name, opts, cls) => '<div class="opts" role="radiogroup">' + opts.map(o => '<label class="opt '+(o[2]||"")+'"><input type="radio" name="'+name+'" value="'+o[0]+'"><span>'+o[1]+'</span></label>').join("") + '</div>';
+const ta = (name, label, hint, rows) => '<label class="lbl" for="f_'+name+'">'+label+(hint?' <small>'+hint+'</small>':'')+'</label><textarea id="f_'+name+'" name="'+name+'" rows="'+(rows||3)+'" maxlength="'+MAX_TEXT+'"></textarea><span class="cnt" data-cnt="'+name+'"></span>';
+const err = n => '<p class="err" data-err="'+n+'" role="alert"></p>';
+
+function renderForm(stage){
+  const t = stage==="loi" ? "LOI review" : "Application review";
+  return '<aside class="rf" aria-label="Review form"><div class="rf-head"><b>'+t+'</b><span id="saveInfo"></span></div><div id="bannerSlot"></div>'
+  + '<form id="rf" novalidate autocomplete="off">'
+  + '<div class="coi-box" id="q_coi"><h3>Conflict of interest</h3><p class="crit" style="margin:0 0 10px;font-size:13px">Before reading further, declare whether you have a conflict with this application (same institution, collaborator, financial interest, personal relationship).</p>'
+  + radios("coi_declared",[["none","I have no conflict"],["conflict","I have a conflict","warm"]])
+  + '<div id="coiNoteWrap" hidden>'+ta("coi_note","Describe the conflict","(required)",2)+'</div>'+err("coi_declared")+err("coi_note")+'</div>'
+  + '<fieldset id="body">'
+  + '<div class="qb" id="q_f1"><h3><span class="num">1</span>Importance of the Research</h3><p class="crit">Significance, Innovation</p>'+scale("factor1_score","Importance of the Research score")+err("factor1_score")+ta("factor1_comment","Comment","(optional)")+'</div>'
+  + '<div class="qb" id="q_f2"><h3><span class="num">2</span>Rigor and Feasibility</h3><p class="crit">Approach</p>'+scale("factor2_score","Rigor and Feasibility score")+err("factor2_score")+ta("factor2_comment","Comment","(optional)")+'</div>'
+  + '<div class="qb" id="q_f3"><h3><span class="num">3</span>Expertise and Resources</h3><p class="crit">Investigators, Environment. Gaps are not scored.</p>'+radios("factor3",[["appropriate","Appropriate"],["gaps","Gaps identified"]])+err("factor3")
+  + '<div id="f3Wrap" hidden>'+ta("factor3_explanation","Explain the gaps","(required)")+err("factor3_explanation")+'</div></div>'
+  + '<div class="qb" id="q_hs"><h3><span class="num">4</span>Human subjects protections</h3><p class="crit">Additional review criterion — not scored.</p>'+radios("human_subjects",[["acceptable","Acceptable"],["unacceptable","Unacceptable","warm"],["na","Not applicable"]])+err("human_subjects")
+  + '<div id="hsWrap" hidden>'+ta("human_subjects_comment","Explain the concern","(required)",2)+err("human_subjects_comment")+'</div></div>'
+  + '<div class="qb" id="q_ov"><h3><span class="num">5</span>Overall Impact</h3><p class="crit">Likelihood for the project to exert a sustained, powerful influence on the research field(s) involved.</p>'+scale("overall_impact","Overall Impact score")+err("overall_impact")
+  + ta("summary","Summary statement","(required)",4)+err("summary")+ta("strengths","Strengths","(optional)")+ta("weaknesses","Weaknesses","(optional)")+'</div>'
+  + '</fieldset><div id="sumErr"></div>'
+  + '<div class="actions" id="actions"><button class="btn" type="button" id="btnSave">Save draft</button><button class="btn primary" type="button" id="btnSubmit">Submit review</button><span class="saved" id="savedAt"></span></div>'
+  + '</form></aside>';
+}
+
+function readForm(){
+  const f = $("#rf"), r = {};
+  FIELDS.forEach(n => {
+    const els = f.elements[n];
+    if (!els) return;
+    if (els.length !== undefined && els.type === undefined) { const c = Array.from(els).find(e => e.checked); r[n] = c ? c.value : ""; }
+    else r[n] = els.value;
+  });
+  ["factor1_score","factor2_score","overall_impact"].forEach(n => r[n] = r[n] === "" ? "" : Number(r[n]));
+  return r;
+}
+function fillForm(r){
+  const f = $("#rf");
+  FIELDS.forEach(n => {
+    const els = f.elements[n]; if (!els) return;
+    const v = r && r[n] !== undefined && r[n] !== null ? String(r[n]) : "";
+    if (els.length !== undefined && els.type === undefined) Array.from(els).forEach(e => e.checked = e.value === v);
+    else els.value = v;
+  });
+}
+function descFor(name, v){
+  const p = document.querySelector('[data-desc="'+name+'"]'); if (!p) return;
+  p.innerHTML = v ? '<b>'+v+' · '+DESC[v]+'</b> — '+DESC_LONG[v] : '1 = best, 9 = worst. Hover or select a number to see the descriptor.';
+}
+function syncUI(){
+  const r = readForm(), conflict = r.coi_declared === "conflict", ro = CUR.readonly;
+  $("#coiNoteWrap").hidden = !conflict;
+  $("#f3Wrap").hidden = r.factor3 !== "gaps";
+  $("#hsWrap").hidden = r.human_subjects !== "unacceptable";
+  $("#body").disabled = ro || conflict;
+  $("#q_coi").querySelectorAll("input,textarea").forEach(e => e.disabled = ro);
+  $("#actions").hidden = ro;
+  $("#btnSubmit").textContent = conflict ? "Submit conflict declaration" : "Submit review";
+  $("#btnSubmit").className = "btn " + (conflict ? "warm" : "primary");
+  ["factor1_score","factor2_score","overall_impact"].forEach(n => descFor(n, r[n]));
+  document.querySelectorAll("[data-cnt]").forEach(c => { const n = (r[c.dataset.cnt] || "").length; c.textContent = n + " / " + MAX_TEXT; c.classList.toggle("hot", n > MAX_TEXT * 0.9); });
+}
+const totalLen = r => TEXT_FIELDS.reduce((a, n) => a + String(r[n] || "").length, 0);
+const totalErr = r => totalLen(r) > MAX_TOTAL ? [["", "Your review is too long in total (" + totalLen(r) + " of " + MAX_TOTAL + " characters). Please shorten it."]] : [];
+
+function validate(r){
+  const e = totalErr(r);
+  if (!r.coi_declared) e.push(["coi_declared","Please declare whether you have a conflict of interest."]);
+  else if (r.coi_declared === "conflict") { if (!r.coi_note.trim()) e.push(["coi_note","Describe the conflict so the coordinator can reassign."]); }
+  else {
+    if (r.factor1_score==="") e.push(["factor1_score","Choose a score for Importance of the Research (1–9)."]);
+    if (r.factor2_score==="") e.push(["factor2_score","Choose a score for Rigor and Feasibility (1–9)."]);
+    if (!r.factor3) e.push(["factor3","Choose Appropriate or Gaps identified."]);
+    else if (r.factor3==="gaps" && !r.factor3_explanation.trim()) e.push(["factor3_explanation","Explain the gaps you identified."]);
+    if (!r.human_subjects) e.push(["human_subjects","Choose Acceptable, Unacceptable, or Not applicable."]);
+    else if (r.human_subjects==="unacceptable" && !r.human_subjects_comment.trim()) e.push(["human_subjects_comment","Explain why human subjects protections are unacceptable."]);
+    if (r.overall_impact==="") e.push(["overall_impact","Choose an Overall Impact score (1–9)."]);
+    if (!r.summary.trim()) e.push(["summary","Write a short summary statement."]);
+  }
+  return e;
+}
+function showErrors(errs){
+  document.querySelectorAll("[data-err]").forEach(p => p.textContent = "");
+  document.querySelectorAll(".bad").forEach(x => x.classList.remove("bad"));
+  errs.forEach(([f,m]) => { const p = document.querySelector('[data-err="'+f+'"]'); if (p) { p.textContent = m; if (p.parentElement) p.parentElement.classList.add("bad"); } });
+  const s = $("#sumErr");
+  s.innerHTML = errs.length ? '<div class="summary-err" role="alert">Please fix '+errs.length+' item'+(errs.length>1?"s":"")+' before submitting:<ul>'+errs.map(([f,m]) => '<li><a href="#" data-goto="'+f+'">'+esc(m)+'</a></li>').join("")+'</ul></div>' : "";
+}
+function goto(f){
+  const el = $("#rf").elements[f]; const t = el && el.length !== undefined && el.type === undefined ? el[0] : el;
+  if (t) { t.scrollIntoView({block:"center"}); t.focus(); }
+}
+
+function banner(){
+  const s = CUR.status, slot = $("#bannerSlot");
+  if (s === "submitted") slot.innerHTML = '<div class="banner ok"><b>Submitted</b> '+esc(fmtDate(CUR.updated_at))+'. This review is final. Contact the coordinator if it needs to be reopened.</div>';
+  else if (s === "conflict") slot.innerHTML = '<div class="banner warm"><b>Conflict declared</b> '+esc(fmtDate(CUR.updated_at))+'. The coordinator has been notified through the sheet.</div>';
+  else slot.innerHTML = CUR.restored ? '<div class="banner info">Restored your unsaved edits from this browser. Press Save draft to keep them.</div>' : "";
+}
+
+function openApp(id, stage){
+  const app = DATA.applications.find(p => p.application_id===id && p.stage===stage);
+  if (!app || !DATA.assignments.some(a => a.application_id===id && a.stage===stage)) return go("");
+  renderHeader();
+  const rv = revOf(id, stage);
+  const status = rv ? rv.status : "none";
+  const locked = status === "submitted" || status === "conflict";
+  let review = rv ? rv.review : {}, restored = false;
+  if (!locked) {
+    try {
+      const l = JSON.parse(localStorage.getItem(lsKey(id, stage)) || "null");
+      if (l && (!rv || (l.ts||0) > Date.parse(rv.updated_at||0))) { review = l.review; restored = true; }
+    } catch(e){}
+  }
+  CUR = {app, stage, id, status, updated_at: rv && rv.updated_at, readonly: locked, restored};
+  document.title = app.data.title + " · aitcreview";
+  $("#main").innerHTML = '<div class="crumb"><a href="#t='+encodeURIComponent(TOKEN)+'" id="back">← All assignments</a></div><div class="split">'+renderApp(app.data, stage)+renderForm(stage)+'</div>';
+  fillForm(review); syncUI(); banner();
+  if (rv && !locked) $("#savedAt").textContent = "Draft saved " + fmtDate(rv.updated_at);
+  window.scrollTo(0,0);
+}
+
+function localSave(){
+  if (!CUR || CUR.readonly) return;
+  localStorage.setItem(lsKey(CUR.id, CUR.stage), JSON.stringify({ts:Date.now(), review:readForm()}));
+  $("#savedAt").textContent = "Unsaved edits kept in this browser";
+}
+
+async function send(submit){
+  const r = readForm();
+  if (submit) { const errs = validate(r); showErrors(errs); if (errs.length) { goto(errs[0][0]); return false; } }
+  else { const te = totalErr(r); showErrors(te); if (te.length) return false; }
+  const btns = [$("#btnSave"), $("#btnSubmit")]; btns.forEach(b => b.disabled = true);
+  let res;
+  try { res = await api.save({t:TOKEN, application_id:CUR.id, stage:CUR.stage, review:r, submit}); }
+  catch(e){ btns.forEach(b => b.disabled = false); $("#savedAt").textContent = "Couldn't reach the server — your edits are kept in this browser. Try again."; return false; }
+  btns.forEach(b => b.disabled = false);
+  if (res.error === "invalid_token") { INVALID(); return false; }
+  if (res.message) { $("#savedAt").textContent = res.message; return false; }
+  if (res.error === "locked") { await reload(); return false; }
+  if (res.error === "validation") { showErrors((res.details||[]).map(m => ["",m])); $("#sumErr").innerHTML = '<div class="summary-err" role="alert">'+esc((res.details||[]).join("; "))+'</div>'; return false; }
+  if (res.error || !res.ok) { $("#savedAt").textContent = "Save failed (" + (res.error||"unknown") + "). Your edits are kept in this browser."; return false; }
+  localStorage.removeItem(lsKey(CUR.id, CUR.stage));
+  const i = DATA.reviews.findIndex(x => x.application_id===CUR.id && x.stage===CUR.stage);
+  const entry = {application_id:CUR.id, stage:CUR.stage, status:res.status, updated_at:res.updated_at, review:r};
+  if (i >= 0) DATA.reviews[i] = entry; else DATA.reviews.push(entry);
+  CUR.status = res.status; CUR.updated_at = res.updated_at; CUR.restored = false;
+  if (submit) { CUR.readonly = true; syncUI(); banner(); renderHeader(); document.querySelector(".rf").scrollTop = 0; window.scrollTo(0,0); }
+  else { $("#savedAt").textContent = "Draft saved " + fmtDate(res.updated_at); banner(); renderHeader(); }
+  return true;
+}
+async function reload(){ const d = await api.me(TOKEN); if (d && !d.error) { DATA = d; route(); } }
+
+function confirmDlg(title, body){
+  return new Promise(res => {
+    const d = $("#dlg"); $("#dlgT").textContent = title; $("#dlgB").textContent = body;
+    const done = v => { d.close(); res(v); };
+    $("#dlgYes").onclick = () => done(true); $("#dlgNo").onclick = () => done(false); d.oncancel = () => res(false);
+    d.showModal(); $("#dlgNo").focus();
+  });
+}
+
+document.addEventListener("click", async e => {
+  const g = e.target.closest("[data-goto]"); if (g) { e.preventDefault(); goto(g.dataset.goto); return; }
+  if (e.target.id === "btnSave") send(false);
+  if (e.target.id === "btnSubmit") {
+    const r = readForm(), errs = validate(r); showErrors(errs);
+    if (errs.length) return goto(errs[0][0]);
+    const conflict = r.coi_declared === "conflict";
+    const ok = await confirmDlg(conflict ? "Submit conflict declaration?" : "Submit this review?", conflict ? "You will be marked as having a conflict and won't be able to review this application." : "Once submitted you can't edit it. Double-check your scores and comments.");
+    if (ok) send(true);
+  }
+});
+document.addEventListener("input", e => { if (e.target.closest("#rf")) { syncUI(); localSave(); } });
+document.addEventListener("change", e => { if (e.target.closest("#rf")) { syncUI(); localSave(); } });
+document.addEventListener("mouseover", e => {
+  const l = e.target.closest(".scale label"); if (!l) return;
+  const sc = l.closest(".qb"), n = l.querySelector("input"), v = n.value;
+  const p = sc.querySelector("[data-desc]"); p.innerHTML = '<b>'+v+' · '+DESC[v]+'</b> — '+DESC_LONG[v];
+});
+document.addEventListener("mouseout", e => { if (e.target.closest(".scale label") && CUR) syncUI(); });
+document.addEventListener("focusin", e => { if (e.target.matches(".scale input")) { const v = e.target.value; e.target.closest(".qb").querySelector("[data-desc]").innerHTML = '<b>'+v+' · '+DESC[v]+'</b> — '+DESC_LONG[v]; } });
+document.addEventListener("focusout", e => { if (e.target.matches(".scale input") && CUR) syncUI(); });
+
+/* ---------------- routing ---------------- */
+function go(h){ location.hash = h || ("#t=" + encodeURIComponent(TOKEN)); }
+function route(){
+  if (!DATA) return;
+  const hp = hashParams(), ht = hp.get("t");
+  if (ht && ht !== TOKEN) { TOKEN = ht; DATA = null; CUR = null; load(); return; }
+  const id = hp.get("a"), st = hp.get("s");
+  if (id && (st === "loi" || st === "full")) openApp(id, st); else renderList();
+}
+window.addEventListener("hashchange", route);
+window.addEventListener("beforeunload", () => {});
+
+/* ---------------- demo bar ---------------- */
+if (MOCK) {
+  $("#demobar").hidden = false;
+  if (!TOKEN) { TOKEN = MOCK.reviewers[0].token; history.replaceState(null, "", location.pathname + "#t=" + encodeURIComponent(TOKEN)); }
+  const sel = $("#who");
+  sel.innerHTML = MOCK.reviewers.map(r => '<option value="'+esc(r.token)+'">'+esc(r.name)+'</option>').join("");
+  sel.value = TOKEN;
+  sel.addEventListener("change", () => { TOKEN = sel.value; history.replaceState(null, "", location.pathname + "#t=" + encodeURIComponent(TOKEN)); DATA = null; load(); });
+  $("#resetDemo").addEventListener("click", () => { Object.keys(localStorage).filter(k => k.startsWith("aitc-")).forEach(k => localStorage.removeItem(k)); load(); });
+}
+load();
+</script>
+</body>
+</html>

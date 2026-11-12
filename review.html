@@ -174,6 +174,15 @@ dialog h3{font:600 20px var(--serif);color:var(--ink);margin:0 0 8px}
 dialog .actions{border:0;justify-content:flex-end;padding-top:14px}
 footer{max-width:1240px;margin:0 auto;padding:0 32px 40px;font-size:12px;color:var(--muted)}
 
+.dlrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+#retrySlot .banner{margin:12px 0 0}
+#retrySlot .why{opacity:.8}
+.btn.sm{padding:6px 14px;font-size:13px}
+.inv h2.invt{font:600 28px/1.25 var(--serif);color:var(--yale);margin:2px 0 10px}
+.inv .abs{white-space:pre-wrap;color:var(--ink);font-size:15px;margin:0 0 6px}
+.inv fieldset{border:0;padding:0;margin:18px 0 8px}
+.inv legend.lbl{padding:0}
+.inv .actions{margin-top:14px}
 @media (max-width:980px){
   h1{font-size:34px}
   .thead{display:none}
@@ -221,6 +230,7 @@ const MOCK = null;          // null in production; sample data in the demo
 const DESC = {1:"Exceptional",2:"Outstanding",3:"Excellent",4:"Very Good",5:"Good",6:"Satisfactory",7:"Fair",8:"Marginal",9:"Poor"};
 const DESC_LONG = {1:"Exceptionally strong with essentially no weaknesses",2:"Extremely strong with negligible weaknesses",3:"Very strong with only some minor weaknesses",4:"Strong but with numerous minor weaknesses",5:"Strong but with at least one moderate weakness",6:"Some strengths but at least one moderate weakness",7:"Some strengths but with at least one major weakness",8:"A few strengths and a few major weaknesses",9:"Very few strengths and numerous major weaknesses"};
 const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money = n => "$" + Number(n).toLocaleString("en-US");
 const fmtDate = s => s ? new Date(s).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}) : "";
@@ -271,7 +281,13 @@ async function mockSave(b){
   localStorage.setItem(MKEY, JSON.stringify(st));
   return {ok:true, status, updated_at:now};
 }
-const api = MOCK ? {me:mockMe, save:mockSave} : {me:realMe, save:realSave};
+async function realInvite(t, id, stage){
+  const r = await fetch(API_URL + (API_URL.includes("?")?"&":"?") + "action=invite&t=" + encodeURIComponent(t) + "&app=" + encodeURIComponent(id) + "&stage=" + stage);
+  return r.json();
+}
+const GS_DEMO = false;     // true only in review_synth_demo.html (runs the real Code.gs on an in-memory Sheet)
+
+const api = GS_DEMO ? GSD_API : MOCK ? {me:mockMe, save:mockSave, invite:async()=>({error:"not_invited"}), respond:async()=>({error:"not_invited"})} : {me:realMe, save:realSave, invite:realInvite, respond:realSave};
 
 /* ---------------- state ---------------- */
 let DATA = null;          // response of action=me
@@ -321,7 +337,9 @@ function renderList(){
     const app = DATA.applications.find(p => p.application_id===x.application_id && p.stage===x.stage);
     return app ? {x, d:app.data} : null;
   }).filter(Boolean);
-  let h = '<h2 class="sec">Your assignments</h2><p class="sub">Open an application to read it and write your review. Drafts are saved; submitted reviews are final.</p>';
+  let h = (DATA.invitations || []).length ? '<div class="note"><b>You have ' + DATA.invitations.length + ' pending invitation' + (DATA.invitations.length > 1 ? "s" : "") + '</b>'
+    + DATA.invitations.map(v => '<div><a href="#t=' + encodeURIComponent(TOKEN) + '&respond=' + encodeURIComponent(v.application_id + "." + v.stage) + '">' + esc(v.title || "Untitled") + ' (' + (v.stage === "loi" ? "LOI" : "Full") + ')</a></div>').join("") + '</div>' : "";
+  h += '<h2 class="sec">Your assignments</h2><p class="sub">Open an application to read it and write your review. Drafts are saved; submitted reviews are final.</p>';
   if (!rows.length) h += '<div class="table"><div class="empty-state">No applications are assigned to you yet.</div></div>';
   else {
     h += '<div class="table"><div class="thead" aria-hidden="true"><div>Application</div><div>Site</div><div>Stage</div><div>My status</div></div>';
@@ -339,6 +357,67 @@ function renderList(){
   $("#main").innerHTML = h;
   window.scrollTo(0,0);
 }
+
+
+/* ---------------- invitation page (accept / decline) ---------------- */
+const parseRespond = v => { const i = (v || "").lastIndexOf("."); if (i < 1) return null; const st = v.slice(i + 1); return (st === "loi" || st === "full") ? {id: v.slice(0, i), stage: st} : null; };
+const INV_MSG = {not_invited: "This invitation is not available. It may have been cancelled or the link may be wrong. Ask the AITC coordinator.",
+  already_responded: "You have already answered this invitation, so it can't be changed here. Contact the AITC coordinator if you need a change."};
+async function showInvitation(id, stage, act){
+  CUR = null; $("#hero").hidden = true; $("#stats").hidden = true; $("#navRight").textContent = DATA.reviewer.name; document.title = "Invitation · aitcreview";
+  $("#main").innerHTML = '<div class="msg"><p>Loading your invitation…</p></div>';
+  let inv;
+  try { inv = await api.invite(TOKEN, id, stage); } catch (e) { return showMessage("Couldn't reach the server", "Check your connection and reload this page.", true); }
+  if (!inv || inv.error) return showMessage("This invitation isn't available", INV_MSG.not_invited, true);
+  const due = inv.due_date ? fmtDay(inv.due_date) : "To be confirmed";
+  let h = '<div class="crumb"><a href="#t=' + encodeURIComponent(TOKEN) + '">← Your assignments</a></div><div class="card inv"><div class="chips"><span class="stagepill ' + stage + '">' + (stage === "loi" ? "Letter of intent" : "Full application") + '</span><span class="cell">Due: ' + esc(due) + '</span></div>'
+    + '<p class="sub" style="margin:0">You are invited to review</p><h2 class="invt">' + esc(inv.title || "Untitled application") + '</h2>'
+    + '<h4>Summary</h4><p class="abs">' + (inv.abstract ? esc(inv.abstract) : '<span style="color:var(--muted)">No summary was provided.</span>') + '</p>'
+    + '<p class="docnote">The full application opens after you accept.</p><div id="invBody"></div></div>';
+  $("#main").innerHTML = h; window.scrollTo(0, 0);
+  const body = $("#invBody");
+  if (inv.status === "accepted") { body.innerHTML = '<div class="banner ok" style="margin:6px 0 0">You accepted this invitation. Thank you.</div><p style="margin:14px 0 0"><a class="btn primary" href="' + appHash(id, stage) + '" id="openApp">Open the application</a></p>'; return; }
+  if (inv.status === "declined") { body.innerHTML = '<div class="banner info" style="margin:6px 0 0">You declined this invitation' + (inv.decline_reason ? " (" + esc(inv.decline_reason) + ")" : "") + ". Thank you for letting us know.</div>"; return; }
+  body.innerHTML = '<form id="invForm" novalidate><fieldset><legend class="lbl">Your answer</legend><div class="opts">'
+    + '<label class="opt"><input type="radio" name="decision" value="accept"><span>Accept</span></label>'
+    + '<label class="opt warm"><input type="radio" name="decision" value="decline"><span>Decline</span></label></div></fieldset>'
+    + '<div id="accBox" hidden>' + (inv.require_coi ? '<div class="coi-box"><h3>Conflict of interest</h3><div class="opts" role="radiogroup" aria-label="Conflict of interest">'
+      + '<label class="opt"><input type="radio" name="coi" value="none"><span>I have no conflict of interest</span></label>'
+      + '<label class="opt warm"><input type="radio" name="coi" value="conflict"><span>I have a conflict of interest</span></label></div>'
+      + '<div id="coiNote" hidden><label class="lbl" for="coiText">Describe the conflict <small>(optional; declaring a conflict declines the invitation)</small></label><textarea id="coiText" rows="2" maxlength="500"></textarea></div></div>' : "") + '</div>'
+    + '<div id="decBox" hidden><label class="lbl" for="reason">Reason <small>(optional)</small></label><textarea id="reason" rows="3" maxlength="500"></textarea>'
+    + '<label class="lbl" for="sugg">Suggested reviewer <small>(optional: name and email)</small></label><input id="sugg" maxlength="200" style="width:100%;font:inherit;border:1px solid var(--line-2);border-radius:10px;padding:9px 12px"></div>'
+    + '<p class="err" id="invErr" role="alert"></p><div class="actions"><button class="btn primary" id="invBtn" type="submit" disabled>Choose Accept or Decline</button></div></form>';
+  const sync = () => {
+    const d = (document.querySelector('input[name=decision]:checked') || {}).value, c = (document.querySelector('input[name=coi]:checked') || {}).value;
+    $("#accBox").hidden = d !== "accept"; $("#decBox").hidden = d !== "decline";
+    const cn = $("#coiNote"); if (cn) cn.hidden = c !== "conflict";
+    const b = $("#invBtn"); b.disabled = !d;
+    b.className = "btn " + (d === "decline" || (d === "accept" && c === "conflict") ? "warm" : "primary");
+    b.textContent = !d ? "Choose Accept or Decline" : d === "decline" ? "Decline invitation" : c === "conflict" ? "Decline: I have a conflict" : "Accept invitation";
+  };
+  $$("#invForm input").forEach(i => i.addEventListener("change", sync));
+  if (act === "accept" || act === "decline") { const r = document.querySelector('input[name=decision][value=' + act + ']'); if (r) r.checked = true; }
+  sync();
+  $("#invForm").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const d = (document.querySelector('input[name=decision]:checked') || {}).value, c = (document.querySelector('input[name=coi]:checked') || {}).value || "";
+    const err = $("#invErr"); err.textContent = "";
+    if (d === "accept" && inv.require_coi && !c) { err.textContent = "Please confirm that you have no conflict of interest, or declare a conflict."; return; }
+    const b = $("#invBtn"); b.disabled = true;
+    const req = {t: TOKEN, action: "respond", application_id: id, stage, decision: d};
+    if (d === "accept") { req.coi = c; if (c === "conflict") req.reason = $("#coiText").value; }
+    else { req.reason = $("#reason").value; req.suggested = $("#sugg").value; }
+    let r;
+    try { r = await api.respond(req); } catch (e) { err.textContent = "Couldn't reach the server. Please try again."; b.disabled = false; return; }
+    if (!r || r.error) { err.textContent = (r && (r.message || INV_MSG[r.error])) || "Something went wrong. Please try again or contact the coordinator."; b.disabled = false; return; }
+    if (r.status === "accepted") {
+      body.innerHTML = '<div class="banner ok" style="margin:6px 0 0" role="status">Thank you, you accepted this review.' + (r.mail_sent ? " A confirmation email with your personal review link is on its way." : "") + '</div><p style="margin:14px 0 0"><button class="btn primary" id="openApp" type="button">Open the application</button></p>';
+      $("#openApp").addEventListener("click", async () => { try { DATA = await api.me(TOKEN); } catch (e) {} location.hash = appHash(id, stage); });
+    } else body.innerHTML = '<div class="banner info" style="margin:6px 0 0" role="status">You declined this invitation. Thank you for letting us know.</div>';
+  });
+}
+const fmtDay = ymd => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd || ""); return m ? ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m[2]-1] + " " + (+m[3]) + ", " + m[1] : ""; };
 
 /* ---------------- detail ---------------- */
 const aval = (q, a) => /cost/i.test(q) && a !== "" && !isNaN(Number(a)) ? money(a) : a;
@@ -381,7 +460,9 @@ function renderForm(stage){
   + '<div class="qb" id="q_ov"><h3><span class="num">5</span>Overall Impact</h3><p class="crit">Likelihood for the project to exert a sustained, powerful influence on the research field(s) involved.</p>'+scale("overall_impact","Overall Impact score")+err("overall_impact")
   + ta("summary","Summary statement","(required)",4)+err("summary")+ta("strengths","Strengths","(optional)")+ta("weaknesses","Weaknesses","(optional)")+'</div>'
   + '</fieldset><div id="sumErr"></div>'
+  + '<div id="retrySlot" aria-live="assertive"></div>'
   + '<div class="actions" id="actions"><button class="btn" type="button" id="btnSave">Save draft</button><button class="btn primary" type="button" id="btnSubmit">Submit review</button><span class="saved" id="savedAt"></span></div>'
+  + '<div class="dlrow"><button class="btn sm" type="button" id="btnDownload">Download my review (.txt)</button><span class="docnote">A plain-text copy of what is in the form, saved on your computer.</span></div>'
   + '</form></aside>';
 }
 
@@ -455,7 +536,7 @@ function goto(f){
 
 function banner(){
   const s = CUR.status, slot = $("#bannerSlot");
-  if (s === "submitted") slot.innerHTML = '<div class="banner ok"><b>Submitted</b> '+esc(fmtDate(CUR.updated_at))+'. This review is final. Contact the coordinator if it needs to be reopened.</div>';
+  if (s === "submitted") slot.innerHTML = '<div class="banner ok"><b>Submitted</b> '+esc(fmtDate(CUR.updated_at))+'. This review is final.'+(CUR.receipt?' A copy was emailed to you.':'')+' Contact the coordinator if it needs to be reopened.</div>';
   else if (s === "conflict") slot.innerHTML = '<div class="banner warm"><b>Conflict declared</b> '+esc(fmtDate(CUR.updated_at))+'. The coordinator has been notified through the sheet.</div>';
   else slot.innerHTML = CUR.restored ? '<div class="banner info">Restored your unsaved edits from this browser. Press Save draft to keep them.</div>' : "";
 }
@@ -488,25 +569,48 @@ function localSave(){
   $("#savedAt").textContent = "Unsaved edits kept in this browser";
 }
 
+const LABELS = [["coi_declared","Conflict of interest"],["coi_note","Conflict note"],["factor1_score","Factor 1 score (1 = best)"],["factor1_comment","Factor 1 comment"],["factor2_score","Factor 2 score (1 = best)"],["factor2_comment","Factor 2 comment"],["factor3","Factor 3 (expertise and resources)"],["factor3_explanation","Factor 3 explanation"],["human_subjects","Human subjects protections"],["human_subjects_comment","Human subjects comment"],["overall_impact","Overall impact (1 = best)"],["summary","Summary"],["strengths","Strengths"],["weaknesses","Weaknesses"]];
+function reviewAsText(){
+  const r = readForm(), t = CUR.app && CUR.app.data ? CUR.app.data.title : CUR.id;
+  let o = "Review of: " + t + " (" + (CUR.stage === "loi" ? "LOI" : "Full application") + ")\nReviewer: " + ((DATA.reviewer && DATA.reviewer.name) || "") + "\nDownloaded: " + new Date().toISOString() + "\n";
+  LABELS.forEach(l => { const v = r[l[0]]; if (v !== "" && v !== undefined && v !== null) o += "\n" + l[1] + ":\n" + v + "\n"; });
+  return o;
+}
+function downloadReview(){
+  if (!CUR) return;
+  const blob = new Blob([reviewAsText()], {type: "text/plain;charset=utf-8"});
+  const a = document.createElement("a"), u = URL.createObjectURL(blob);
+  a.href = u; a.download = "aitc-review-" + String(CUR.id).replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40) + "-" + CUR.stage + ".txt";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000);
+}
+function clearRetry(){ const s = $("#retrySlot"); if (s) s.innerHTML = ""; }
+function showRetry(submit, why){
+  const s = $("#retrySlot"); if (!s) return;
+  s.innerHTML = '<div class="banner warm retry" role="alert"><b>' + (submit ? "Not submitted yet" : "Not saved yet") + '</b> - your text is saved in this browser, click Retry.' + (why ? ' <span class="why">(' + esc(why) + ')</span>' : '') + ' <button class="btn warm sm" type="button" id="btnRetry" data-submit="' + (submit ? 1 : 0) + '">Retry</button></div>';
+}
+
 async function send(submit){
   const r = readForm();
   if (submit) { const errs = validate(r); showErrors(errs); if (errs.length) { goto(errs[0][0]); return false; } }
   else { const te = totalErr(r); showErrors(te); if (te.length) return false; }
+  localSave(); clearRetry();   // the draft is on disk before anything goes over the network
   const btns = [$("#btnSave"), $("#btnSubmit")]; btns.forEach(b => b.disabled = true);
   let res;
   try { res = await api.save({t:TOKEN, application_id:CUR.id, stage:CUR.stage, review:r, submit}); }
-  catch(e){ btns.forEach(b => b.disabled = false); $("#savedAt").textContent = "Couldn't reach the server — your edits are kept in this browser. Try again."; return false; }
+  catch(e){ btns.forEach(b => b.disabled = false); showRetry(submit, "no connection to the server"); return false; }
   btns.forEach(b => b.disabled = false);
-  if (res.error === "invalid_token") { INVALID(); return false; }
-  if (res.message) { $("#savedAt").textContent = res.message; return false; }
-  if (res.error === "locked") { await reload(); return false; }
-  if (res.error === "validation") { showErrors((res.details||[]).map(m => ["",m])); $("#sumErr").innerHTML = '<div class="summary-err" role="alert">'+esc((res.details||[]).join("; "))+'</div>'; return false; }
-  if (res.error || !res.ok) { $("#savedAt").textContent = "Save failed (" + (res.error||"unknown") + "). Your edits are kept in this browser."; return false; }
+  if (res && res.error === "invalid_token") { INVALID(); return false; }
+  if (res && res.error === "locked") { await reload(); return false; }
+  if (res && res.error === "validation") { showErrors((res.details||[]).map(m => ["",m])); $("#sumErr").innerHTML = '<div class="summary-err" role="alert">'+esc((res.details||[]).join("; "))+'</div>'; return false; }
+  if (!res || res.error || !res.ok || !res.updated_at || (submit && res.status !== "submitted" && res.status !== "conflict")) {
+    showRetry(submit, (res && (res.message || res.error)) ? String(res.message || res.error) : "the server did not confirm"); return false;
+  }
+  // server acknowledged (ok + updated_at): only now is it safe to drop the local copy and show the new state
   localStorage.removeItem(lsKey(CUR.id, CUR.stage));
   const i = DATA.reviews.findIndex(x => x.application_id===CUR.id && x.stage===CUR.stage);
   const entry = {application_id:CUR.id, stage:CUR.stage, status:res.status, updated_at:res.updated_at, review:r};
   if (i >= 0) DATA.reviews[i] = entry; else DATA.reviews.push(entry);
-  CUR.status = res.status; CUR.updated_at = res.updated_at; CUR.restored = false;
+  CUR.status = res.status; CUR.updated_at = res.updated_at; CUR.restored = false; CUR.receipt = !!res.receipt_sent;
   if (submit) { CUR.readonly = true; syncUI(); banner(); renderHeader(); document.querySelector(".rf").scrollTop = 0; window.scrollTo(0,0); }
   else { $("#savedAt").textContent = "Draft saved " + fmtDate(res.updated_at); banner(); renderHeader(); }
   return true;
@@ -525,6 +629,8 @@ function confirmDlg(title, body){
 document.addEventListener("click", async e => {
   const g = e.target.closest("[data-goto]"); if (g) { e.preventDefault(); goto(g.dataset.goto); return; }
   if (e.target.id === "btnSave") send(false);
+  if (e.target.id === "btnRetry") send(e.target.dataset.submit === "1");
+  if (e.target.id === "btnDownload") downloadReview();
   if (e.target.id === "btnSubmit") {
     const r = readForm(), errs = validate(r); showErrors(errs);
     if (errs.length) return goto(errs[0][0]);
@@ -550,8 +656,8 @@ function route(){
   if (!DATA) return;
   const hp = hashParams(), ht = hp.get("t");
   if (ht && ht !== TOKEN) { TOKEN = ht; DATA = null; CUR = null; load(); return; }
-  const id = hp.get("a"), st = hp.get("s");
-  if (id && (st === "loi" || st === "full")) openApp(id, st); else renderList();
+  const id = hp.get("a"), st = hp.get("s"), rs = parseRespond(hp.get("respond"));
+  if (rs) showInvitation(rs.id, rs.stage, hp.get("act")); else if (id && (st === "loi" || st === "full")) openApp(id, st); else renderList();
 }
 window.addEventListener("hashchange", route);
 window.addEventListener("beforeunload", () => {});
